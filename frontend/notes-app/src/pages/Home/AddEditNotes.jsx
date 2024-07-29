@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import TagInput from "../../components/TagInput";
 import { MdClose } from "react-icons/md";
 import axiosInstance from "../../utils/axiosInstance";
@@ -13,6 +13,8 @@ const AddEditNotes = ({
   const [title, setTitle] = useState(notedata?.title || "");
   const [content, setContent] = useState(notedata?.content || "");
   const [tags, setTags] = useState(notedata?.tags || []);
+  const [noteType, setNoteType] = useState(notedata?.noteType || "notes");
+  const [expense, setExpense] = useState(notedata?.expense || "");
   const [error, setError] = useState(null);
 
   //add new note
@@ -22,6 +24,8 @@ const AddEditNotes = ({
         title,
         content,
         tags,
+        noteType,
+        expense: noteType === "finance" ? expense : undefined,
       });
       if (response.data && response.data.note) {
         showToastMessage("Note added successfully");
@@ -38,6 +42,7 @@ const AddEditNotes = ({
       }
     }
   };
+
   //edit note
   const editNote = async () => {
     const noteId = notedata._id;
@@ -72,6 +77,10 @@ const AddEditNotes = ({
       setError("Please enter the content");
       return;
     }
+    if (noteType === "finance" && !expense) {
+      setError("Please enter the expense");
+      return;
+    }
     setError("");
 
     if (type === "edit") {
@@ -80,6 +89,15 @@ const AddEditNotes = ({
       addNewNote();
     }
   };
+
+  useEffect(() => {
+    if (type === "edit" && notedata) {
+      setNoteType(notedata.noteType);
+      if (notedata.noteType === "finance") {
+        setExpense(notedata.expense);
+      }
+    }
+  }, [notedata, type]);
 
   return (
     <div className="relative">
@@ -102,7 +120,7 @@ const AddEditNotes = ({
       </div>
 
       <div className="flex flex-col gap-2 mt-4">
-        <label className="input-label">CONTENT</label>
+        <label className="input-label">Content</label>
         <textarea
           type="text"
           className="text-sm text-slate-950 outline-none bg-slate-50 p-2 rounded"
@@ -114,9 +132,39 @@ const AddEditNotes = ({
       </div>
 
       <div className="mt-3">
-        <label className="input-label">TAGS</label>
+        <label className="input-label">Tags</label>
         <TagInput tags={tags} setTags={setTags} />
       </div>
+
+      <div className="mt-3">
+        <label className="input-label">Type</label>
+      </div>
+
+      <div className="mt-3">
+        <select
+          value={noteType}
+          onChange={({ target }) => setNoteType(target.value)}
+          disabled={type === "edit"} // disable select when editing
+          className="text-sm text-slate-950 outline-none bg-slate-50 p-2 rounded"
+        >
+          <option value="notes">Notes</option>
+          <option value="finance">Finance</option>
+        </select>
+      </div>
+
+      {noteType === "finance" && (
+        <div className="mt-3">
+          <label className="input-label">Expense</label>
+          <input
+            type="number"
+            className="text-sm text-slate-950 outline-none bg-slate-50 p-2 rounded ml-3"
+            placeholder="Expense"
+            value={expense}
+            onChange={({ target }) => setExpense(target.value)}
+            disabled={type === "edit"} // disable input when editing
+          />
+        </div>
+      )}
 
       {error && <p className="text-red-500 text-xs pt-4">{error}</p>}
 

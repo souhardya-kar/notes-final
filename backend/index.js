@@ -132,8 +132,9 @@ app.get("/get-user", authenticateToken, async (req, res) => {
 });
 
 //add-notes
+// add-notes
 app.post("/add-note", authenticateToken, async (req, res) => {
-  const { title, content, tags } = req.body;
+  const { title, content, tags, noteType, expense } = req.body;
   const { user } = req.user;
 
   if (!title) {
@@ -144,6 +145,16 @@ app.post("/add-note", authenticateToken, async (req, res) => {
       .status(400)
       .json({ error: true, message: "Content is required" });
   }
+  if (!noteType) {
+    return res
+      .status(400)
+      .json({ error: true, message: "Note type is required" });
+  }
+  if (noteType === "finance" && (expense === undefined || expense === null)) {
+    return res
+      .status(400)
+      .json({ error: true, message: "Expense is required for finance notes" });
+  }
 
   try {
     const note = new Note({
@@ -151,6 +162,8 @@ app.post("/add-note", authenticateToken, async (req, res) => {
       content,
       tags: tags || [],
       userId: user._id,
+      noteType,
+      expense: noteType === "finance" ? expense : undefined,
     });
 
     await note.save();

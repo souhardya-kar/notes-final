@@ -1,13 +1,18 @@
+// NoteCard.jsx
+
 import React from "react";
 import { MdOutlinePushPin } from "react-icons/md";
 import { MdCreate, MdDelete } from "react-icons/md";
 import moment from "moment";
+
 const NoteCard = ({
   title,
   date,
   content,
   tags,
   isPinned,
+  category, // Add category prop
+  expense, // Add expense prop
   onEdit,
   onDelete,
   onPinNote,
@@ -32,19 +37,21 @@ const NoteCard = ({
 
       <div className="flex items-center justify-between mt-2">
         <div className="text-xs text-slate-500">
-          {tags.map((item) => `#${item}`)}
+          {tags.map((item) => `#${item}`).join(" ")}
         </div>
+      </div>
 
-        <div className="flex items-center gap-2">
-          <MdCreate
-            className="icon-btn hover:text-green-600"
-            onClick={onEdit}
-          />
-          <MdDelete
-            className="icon-btn hover:text-red-500"
-            onClick={onDelete}
-          />
-        </div>
+      {/* Display category and expense below hashtags */}
+      <div className="text-xs text-slate-500 mt-2">
+        <div>Category: {category}</div>
+        {category === "finance" && expense !== undefined && (
+          <div>Expense: Rs. {expense}</div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 mt-2">
+        <MdCreate className="icon-btn hover:text-green-600" onClick={onEdit} />
+        <MdDelete className="icon-btn hover:text-red-500" onClick={onDelete} />
       </div>
     </div>
   );

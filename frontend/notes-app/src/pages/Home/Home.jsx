@@ -23,17 +23,21 @@ const Home = () => {
   });
 
   const [allNotes, setAllNotes] = useState([]);
+  const [filteredNotes, setFilteredNotes] = useState([]);
   const [userInfo, setUserInfo] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState("notes");
+  const [totalExpense, setTotalExpense] = useState(0);
 
   const [isSearch, setIsSearch] = useState(false);
 
   const navigate = useNavigate();
 
-  //edit notes
+  // edit notes
   const handleEdit = (noteDetails) => {
     setOpenAddEditModal({ isShown: true, data: noteDetails, type: "edit" });
   };
-  //show toast message
+
+  // show toast message
   const showToastMessage = (message, type) => {
     setShowToastMsg({
       isShown: true,
@@ -41,14 +45,16 @@ const Home = () => {
       type,
     });
   };
-  //close toast
+
+  // close toast
   const handleCloseToast = () => {
     setShowToastMsg({
       isShown: false,
       message: "",
     });
   };
-  //Get User Info
+
+  // Get User Info
   const getUserInfo = async () => {
     try {
       const response = await axiosInstance.get("/get-user");
@@ -62,19 +68,21 @@ const Home = () => {
       }
     }
   };
-  //get all notes
+
+  // get all notes
   const getAllNotes = async () => {
     try {
       const response = await axiosInstance.get("/get-all-notes");
       if (response.data && response.data.notes) {
         setAllNotes(response.data.notes);
+        filterNotes(response.data.notes, selectedCategory); // filter notes by selected category
       }
     } catch (error) {
       console.log("An unexpected error occurred. Please try again");
     }
   };
 
-  //Delete note
+  // Delete note
   const deleteNote = async (data) => {
     const noteId = data._id;
     try {
@@ -94,7 +102,7 @@ const Home = () => {
     }
   };
 
-  //serch notes
+  // search notes
   const onSearchNote = async (query) => {
     try {
       const response = await axiosInstance.get("/search-notes", {
@@ -102,7 +110,7 @@ const Home = () => {
       });
       if (response.data && response.data.notes) {
         setIsSearch(true);
-        setAllNotes(response.data.notes);
+        setFilteredNotes(response.data.notes);
       }
     } catch (error) {
       console.log(error);
@@ -111,7 +119,7 @@ const Home = () => {
 
   const handleClearSearch = () => {
     setIsSearch(false);
-    getAllNotes();
+    filterNotes(allNotes, selectedCategory); // re-filter notes by selected category
   };
 
   // update isPinned
@@ -121,7 +129,7 @@ const Home = () => {
       const response = await axiosInstance.put(
         "/update-note-pinned/" + noteId,
         {
-          isPinned: !noteData.isPinned, // Corrected to use noteData.isPinned
+          isPinned: !noteData.isPinned,
         }
       );
       if (response.data && response.data.note) {
@@ -131,6 +139,28 @@ const Home = () => {
     } catch (error) {
       console.log(error);
     }
+  };
+
+  // filter notes by category and calculate total expense for finance category
+  const filterNotes = (notes, category) => {
+    const filtered = notes.filter((note) => note.noteType === category);
+    setFilteredNotes(filtered);
+
+    if (category === "finance") {
+      const total = filtered.reduce(
+        (sum, note) => sum + (note.expense || 0),
+        0
+      );
+      setTotalExpense(total);
+    } else {
+      setTotalExpense(0);
+    }
+  };
+
+  const handleCategoryChange = (e) => {
+    const category = e.target.value;
+    setSelectedCategory(category);
+    filterNotes(allNotes, category);
   };
 
   useEffect(() => {
@@ -147,9 +177,24 @@ const Home = () => {
         handleClearSearch={handleClearSearch}
       />
       <div className="container mx-auto lg:px-4">
-        {allNotes.length > 0 ? (
+        <div className="flex justify-between items-center mt-8">
+          <select
+            value={selectedCategory}
+            onChange={handleCategoryChange}
+            className="p-2 border rounded"
+          >
+            <option value="notes">Notes</option>
+            <option value="finance">Finance</option>
+          </select>
+          {selectedCategory === "finance" && (
+            <div className="text-lg font-semibold">
+              Total Expense: Rs. {totalExpense}
+            </div>
+          )}
+        </div>
+        {filteredNotes.length > 0 ? (
           <div className="grid grid-cols-3 gap-4 mt-8">
-            {allNotes.map((item, index) => (
+            {filteredNotes.map((item) => (
               <NoteCard
                 key={item._id}
                 title={item.title}
@@ -157,6 +202,8 @@ const Home = () => {
                 content={item.content}
                 tags={item.tags}
                 isPinned={item.isPinned}
+                category={item.noteType}
+                expense={item.expense}
                 onEdit={() => handleEdit(item)}
                 onDelete={() => deleteNote(item)}
                 onPinNote={() => updateIsPinned(item)}

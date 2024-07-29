@@ -8,7 +8,14 @@ const noteSchema = new Schema({
   tags: { type: [String], default: [] },
   isPinned: { type: Boolean, default: false },
   userId: { type: String, required: true },
-  createdOn: { type: Date, default: new Date().getTime() },
+  noteType: { type: String, enum: ["notes", "finance"], required: true },
+  expense: {
+    type: Number,
+    required: function () {
+      return this.noteType === "finance";
+    },
+  },
+  createdOn: { type: Date, default: Date.now },
 });
 
 module.exports = mongoose.model("Note", noteSchema);
